@@ -87,7 +87,7 @@ def log_metrics(metrics, stage: str = "", training_epoch=None, learning_rate=Non
 
 
 def setup_tensorboard_logger(trainer, evaluator, output_path, optimizers=None):
-    logger = TensorboardLogger(logdir=output_path)
+    logger = TensorboardLogger(log_dir=output_path)
 
     # Attach the logger to log loss and accuracy for both training and validation
     for tag, cur_evaluator in [("train", trainer), ("validation", evaluator)]:

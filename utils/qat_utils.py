@@ -113,7 +113,7 @@ class UpdateDampeningLossWeighting:
 
 
 class DampeningLoss:
-    def __init__(self, model, weighting=1.0, aggregation="sum"):
+    def __init__(self, model, weighting=1.0, epsilon=0, aggregation="sum"):
         """
         Calculates the dampening loss for all weights in a given quantized model. It is
         expected that all quantized weights are in a Hijacker module.
@@ -122,6 +122,7 @@ class DampeningLoss:
         self.model = model
         self.weighting = weighting
         self.aggregation = aggregation
+        self.epsilon = epsilon
 
     def __call__(self, *args, **kwargs):
         total_bin_loss = 0
@@ -131,17 +132,20 @@ class DampeningLoss:
                 weight, _ = module.get_weight_bias()
                 # The matching weight quantizer (not manager, direct quantizer class)
                 quantizer = module.weight_quantizer.quantizer
-                total_bin_loss += dampening_loss(weight, quantizer, self.aggregation)
+                total_bin_loss += dampening_loss(weight, quantizer, self.epsilon, self.aggregation)
         return total_bin_loss * self.weighting
 
 
-def dampening_loss(w_fp, quantizer, aggregation="sum"):
+def dampening_loss(w_fp, quantizer, epsilon=0, aggregation="sum"):
     # L &= (s*w_{int} - w)^2
     # We also need to add clipping for both cases, we can do so by using the forward
     w_q = quantizer(w_fp, skip_tracking=True).detach()  # this is also clipped and our target
     # clamp w in FP32 domain to not change range learning (min(max) is needed for per-channel)
     w_fp_clip = torch.min(torch.max(w_fp, quantizer.x_min), quantizer.x_max)
-    loss = (w_q - w_fp_clip) ** 2
+    bin_width = (quantizer.x_max - quantizer.x_min)/(1 << quantizer.n_bits)
+    diff = torch.abs(w_q - w_fp_clip)
+    loss = diff ** 2
+    loss[diff<epsilon*bin_width]=0
     if aggregation == "sum":
         return loss.sum()
     elif aggregation == "mean":

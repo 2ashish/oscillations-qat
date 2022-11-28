@@ -238,6 +238,12 @@ def oscillations_dampen_options(func):
         type=float,
         help="Start of annealing (relative to total number of iterations).",
     )
+    @click.option(
+        "--oscillations-dampen-epsilon",
+        default=0,
+        type=float,
+        help="epsilon insensitive L2 loss, % of bin_width",
+    )
     @wraps(func)
     def func_wrapper(config, *args, **kwargs):
         config.osc_damp, remainder_kwargs = split_dict(
@@ -247,6 +253,7 @@ def oscillations_dampen_options(func):
                 "oscillations_dampen_aggregation",
                 "oscillations_dampen_weight_final",
                 "oscillations_dampen_anneal_start",
+                "oscillations_dampen_epsilon",
             ],
             "oscillations_dampen",
         )

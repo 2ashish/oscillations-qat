@@ -110,7 +110,7 @@ def train_quantized(config):
     dampening_loss = None
     if config.osc_damp.weight is not None:
         # Add dampening loss to task loss
-        dampening_loss = DampeningLoss(model, config.osc_damp.weight, config.osc_damp.aggregation)
+        dampening_loss = DampeningLoss(model, config.osc_damp.weight, config.osc_damp.epsilon, config.osc_damp.aggregation)
         loss_dict = {"task_loss": task_loss_fn, "dampening_loss": dampening_loss}
         loss_func = CompositeLoss(loss_dict)
         loss_metrics = {
